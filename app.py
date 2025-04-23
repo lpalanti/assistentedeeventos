@@ -7,11 +7,11 @@ usuarios = {
     "usernames": {
         "admin": {
             "name": "Administrador",
-            "password": stauth.Hasher(["teste123"]).generate()[0]
+            "password": "$2b$12$prnWjZ0bOhaXjNm6sPZReu5aD3Xj0P0dVYbYPO3LZL99kMfDEvD4a"
         },
         "joao": {
             "name": "João da Inovents",
-            "password": stauth.Hasher(["minhasenha"]).generate()[0]
+            "password": "$2b$12$XyNRWgTOBFY2ZONHIfHR4Of7tZ0Uzw0b1FVPi7iGQMF0v7Q8nV74C"
         }
     }
 }
@@ -19,7 +19,7 @@ usuarios = {
 authenticator = stauth.Authenticate(
     usuarios,
     "meu_app_login",  # Nome do cookie
-    "chave_secreta",  # Chave secreta para segurança do cookie
+    "chave_secreta_super_segura",  # Chave secreta
     cookie_expiry_days=1
 )
 
