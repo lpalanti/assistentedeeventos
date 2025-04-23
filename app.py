@@ -4,71 +4,77 @@ import streamlit_authenticator as stauth
 import yaml
 from yaml.loader import SafeLoader
 
-# ---------------------- AUTENTICAÇÃO ----------------------
+# URLs dos arquivos CSV hospedados no GitHub
+URL_DIVERSOS = "https://raw.githubusercontent.com/lpalanti/assistentedeeventos/main/diversos.csv"
+URL_HOTELARIA = "https://raw.githubusercontent.com/lpalanti/assistentedeeventos/main/hotelaria.csv"
+URL_FREELANCERS = "https://raw.githubusercontent.com/lpalanti/assistentedeeventos/main/freelancers.csv"
 
-# Definindo as credenciais
+# Função para carregar os dados e remover as 4 primeiras linhas
+@st.cache_data
+def carregar_dados():
+    diversos = pd.read_csv(URL_DIVERSOS, skiprows=4)
+    hotelaria = pd.read_csv(URL_HOTELARIA, skiprows=4)
+    freelancers = pd.read_csv(URL_FREELANCERS, skiprows=4)
+    return diversos, hotelaria, freelancers
+
+# Configuração do login
 config = {
     "credentials": {
         "usernames": {
-            "admin": {
-                "name": "Administrador",
+            "usuario": {
+                "name": "Usuário",
                 "password": stauth.Hasher(["teste123"]).generate()[0]
             }
         }
     },
     "cookie": {
-        "expiry_days": 1,
-        "key": "cookie_key",
-        "name": "cookie_name"
+        "name": "auth_cookie",
+        "key": "random_key",
+        "expiry_days": 1
     },
-    "preauthorized": {
-        "emails": []
-    }
+    "preauthorized": {}
 }
 
-# Inicializando o autenticador
 authenticator = stauth.Authenticate(
-    config["credentials"],
-    config["cookie"]["name"],
-    config["cookie"]["key"],
-    config["cookie"]["expiry_days"],
-    config["preauthorized"]
+    config["credentials"], config["cookie"]["name"], config["cookie"]["key"], config["cookie"]["expiry_days"]
 )
 
-# Login
 nome, autenticado, nome_usuario = authenticator.login("Login", location="main")
 
-if not autenticado:
-    st.warning("Por favor, faça login para acessar o app.")
-    st.stop()
+if autenticado:
+    st.sidebar.success(f"Bem-vindo, {nome}!")
+    aba = st.sidebar.radio("Escolha uma categoria:", ["Diversos", "Hotelaria", "Freelancers"])
+    
+    diversos, hotelaria, freelancers = carregar_dados()
 
-# ---------------------- APP PRINCIPAL ----------------------
+    if aba == "Diversos":
+        st.header("Tabela: Diversos")
+        busca = st.text_input("Buscar", key="busca_diversos").lower()
+        if busca:
+            filtrado = diversos[diversos.apply(lambda row: row.astype(str).str.lower().str.contains(busca).any(), axis=1)]
+        else:
+            filtrado = diversos
+        st.dataframe(filtrado)
 
-st.title("Assistente de Eventos")
+    elif aba == "Hotelaria":
+        st.header("Tabela: Hotelaria")
+        busca = st.text_input("Buscar", key="busca_hotelaria").lower()
+        if busca:
+            filtrado = hotelaria[hotelaria.apply(lambda row: row.astype(str).str.lower().str.contains(busca).any(), axis=1)]
+        else:
+            filtrado = hotelaria
+        st.dataframe(filtrado)
 
-@st.cache_data
-def carregar_dados():
-    url_diversos = "https://github.com/lpalanti/assistentedeeventos/raw/refs/heads/main/diversos.csv"
-    url_freelancers = "https://github.com/lpalanti/assistentedeeventos/raw/refs/heads/main/freelancers.csv"
-    url_hotelaria = "https://github.com/lpalanti/assistentedeeventos/raw/refs/heads/main/hotelaria.csv"
+    elif aba == "Freelancers":
+        st.header("Tabela: Freelancers")
+        busca = st.text_input("Buscar", key="busca_freelancers").lower()
+        if busca:
+            filtrado = freelancers[freelancers.apply(lambda row: row.astype(str).str.lower().str.contains(busca).any(), axis=1)]
+        else:
+            filtrado = freelancers
+        st.dataframe(filtrado)
 
-    diversos = pd.read_csv(url_diversos)
-    freelancers = pd.read_csv(url_freelancers)
-    hotelaria = pd.read_csv(url_hotelaria)
-    return diversos, freelancers, hotelaria
+    authenticator.logout("Sair", location="sidebar")
+else:
+    st.warning("Por favor, faça login para acessar o conteúdo.")
 
-diversos, freelancers, hotelaria = carregar_dados()
-
-aba = st.sidebar.selectbox("Selecione a aba", ["Diversos", "Freelancers", "Hotelaria"])
-
-if aba == "Diversos":
-    st.subheader("Base Diversos")
-    st.dataframe(diversos)
-
-elif aba == "Freelancers":
-    st.subheader("Base Freelancers")
-    st.dataframe(freelancers)
-
-elif aba == "Hotelaria":
-    st.subheader("Base Hotelaria")
-    st.dataframe(hotelaria)
