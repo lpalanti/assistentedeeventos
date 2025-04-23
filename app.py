@@ -1,11 +1,43 @@
 import streamlit as st
 import pandas as pd
+import streamlit_authenticator as stauth
 
-# URLs corrigidas para os arquivos CSV no GitHub
+# --- AUTENTICAÇÃO ---
+usuarios = {
+    "usernames": {
+        "admin": {
+            "name": "Administrador",
+            "password": stauth.Hasher(["teste123"]).generate()[0]
+        },
+        "joao": {
+            "name": "João da Inovents",
+            "password": stauth.Hasher(["minhasenha"]).generate()[0]
+        }
+    }
+}
+
+authenticator = stauth.Authenticate(
+    usuarios,
+    "meu_app_login",  # Nome do cookie
+    "chave_secreta",  # Chave secreta para segurança do cookie
+    cookie_expiry_days=1
+)
+
+nome, autenticado, nome_usuario = authenticator.login("Login", "main")
+
+if not autenticado:
+    st.warning("Por favor, faça login para acessar o app.")
+    st.stop()
+
+authenticator.logout("Logout", "sidebar")
+st.sidebar.success(f"Logado como: {nome}")
+
+# --- URLS DOS ARQUIVOS CSV NO GITHUB ---
 URL_DIVERSOS = "https://raw.githubusercontent.com/lpalanti/assistentedeeventos/main/diversos.csv"
 URL_FREELANCERS = "https://raw.githubusercontent.com/lpalanti/assistentedeeventos/main/freelancers.csv"
 URL_HOTELARIA = "https://raw.githubusercontent.com/lpalanti/assistentedeeventos/main/hotelaria.csv"
 
+# --- FUNÇÃO PARA CARREGAR DADOS ---
 @st.cache_data
 def carregar_dados():
     diversos = pd.read_csv(URL_DIVERSOS)
@@ -13,31 +45,17 @@ def carregar_dados():
     hotelaria = pd.read_csv(URL_HOTELARIA)
     return diversos, freelancers, hotelaria
 
-# Carregando os dados
 diversos, freelancers, hotelaria = carregar_dados()
 
-st.title("🔎 Banco de Fornecedores")
+# --- EXEMPLO DE VISUALIZAÇÃO DOS DADOS ---
+st.title("Assistente de Eventos")
+st.subheader("Acesso aos dados")
 
-# Menu lateral
-tipo_busca = st.sidebar.radio("Escolha o tipo de fornecedor:", ("Diversos", "Freelancers", "Hotelaria"))
+aba = st.selectbox("Escolha a aba:", ["Diversos", "Freelancers", "Hotelaria"])
 
-# Campo de busca
-busca = st.text_input("Digite o nome, cidade ou área de atuação:")
-
-# Função de filtro
-def filtrar(df, busca):
-    if busca:
-        return df[df.apply(lambda row: row.astype(str).str.contains(busca, case=False).any(), axis=1)]
-    return df
-
-# Exibição de resultados
-if tipo_busca == "Diversos":
-    st.subheader("📦 Diversos")
-    st.dataframe(filtrar(diversos, busca))
-elif tipo_busca == "Freelancers":
-    st.subheader("🧑‍💼 Freelancers")
-    st.dataframe(filtrar(freelancers, busca))
-else:
-    st.subheader("🏨 Hotelaria")
-    st.dataframe(filtrar(hotelaria, busca))
-
+if aba == "Diversos":
+    st.dataframe(diversos)
+elif aba == "Freelancers":
+    st.dataframe(freelancers)
+elif aba == "Hotelaria":
+    st.dataframe(hotelaria)
