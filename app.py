@@ -1,36 +1,41 @@
 import streamlit as st
 import pandas as pd
 
-# URL do seu arquivo .csv no GitHub (use o link "raw")
-URL_FREELANCERS = 'https://raw.githubusercontent.com/SEU_USUARIO/NOME_REPO/main/freelancers.csv'
-URL_DIVERSOS = 'https://raw.githubusercontent.com/SEU_USUARIO/NOME_REPO/main/diversos.csv'
-URL_HOTELARIA = 'https://raw.githubusercontent.com/SEU_USUARIO/NOME_REPO/main/hotelaria.csv'
+# URLs dos arquivos CSV hospedados no GitHub
+URL_DIVERSOS = "https://github.com/lpalanti/assistentedeeventos/raw/refs/heads/main/diversos.csv"
+URL_FREELANCERS = "https://github.com/lpalanti/assistentedeeventos/raw/refs/heads/main/freelancers.csv"
+URL_HOTELARIA = "https://github.com/lpalanti/assistentedeeventos/raw/refs/heads/main/hotelaria.csv"
 
 @st.cache_data
 def carregar_dados():
-    freelancers = pd.read_csv(URL_FREELANCERS)
     diversos = pd.read_csv(URL_DIVERSOS)
+    freelancers = pd.read_csv(URL_FREELANCERS)
     hotelaria = pd.read_csv(URL_HOTELARIA)
-    return freelancers, diversos, hotelaria
+    return diversos, freelancers, hotelaria
 
-freelancers, diversos, hotelaria = carregar_dados()
+# Carregando os dados
+diversos, freelancers, hotelaria = carregar_dados()
 
-st.title("Busca de Fornecedores e Hotéis")
+st.title("🔎 Banco de Fornecedores")
 
-aba = st.selectbox("Escolha uma categoria:", ["Freelancers", "Diversos", "Hotelaria"])
+# Menu lateral para escolher o tipo de busca
+tipo_busca = st.sidebar.radio("Escolha o tipo de fornecedor:", ("Diversos", "Freelancers", "Hotelaria"))
 
-if aba == "Freelancers":
-    df = freelancers
-elif aba == "Diversos":
-    df = diversos
+# Campo de busca
+busca = st.text_input("Digite o nome, cidade ou área de atuação:")
+
+def filtrar(df, busca):
+    if busca:
+        return df[df.apply(lambda row: row.astype(str).str.contains(busca, case=False).any(), axis=1)]
+    return df
+
+# Exibir os resultados de acordo com a escolha
+if tipo_busca == "Diversos":
+    st.subheader("📦 Diversos")
+    st.dataframe(filtrar(diversos, busca))
+elif tipo_busca == "Freelancers":
+    st.subheader("🧑‍💼 Freelancers")
+    st.dataframe(filtrar(freelancers, busca))
 else:
-    df = hotelaria
-
-busca = st.text_input("Buscar por nome, cidade ou estado:")
-if busca:
-    df_filtrado = df[df.apply(lambda row: busca.lower() in str(row).lower(), axis=1)]
-else:
-    df_filtrado = df
-
-st.dataframe(df_filtrado)
-
+    st.subheader("🏨 Hotelaria")
+    st.dataframe(filtrar(hotelaria, busca))
